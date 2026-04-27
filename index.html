@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>論四端：儒道修煉挑戰 40 題</title>
+    <style>
+        :root {
+            --primary: #5d4037;
+            --secondary: #8d6e63;
+            --accent: #d4a373;
+            --bg: #fefae0;
+        }
+        body {
+            font-family: "Microsoft JhengHei", serif;
+            background-color: var(--bg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #game-box {
+            background: #fff;
+            width: 90%;
+            max-width: 700px;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            border: 8px double var(--primary);
+            text-align: center;
+            position: relative;
+        }
+        /* 3秒動畫覆蓋層 */
+        #loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+        }
+        .spinner {
+            width: 50px; height: 50px;
+            border: 5px solid #ddd;
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 計時器 */
+        #timer-bar {
+            width: 100%; height: 10px;
+            background: #eee;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        #timer-fill {
+            width: 100%; height: 100%;
+            background: linear-gradient(to right, #4caf50, #ff9800, #f44336);
+            transition: width 1s linear;
+        }
+
+        .question { font-size: 1.3rem; font-weight: bold; margin-bottom: 25px; color: var(--primary); line-height: 1.5; }
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        button {
+            padding: 12px; font-size: 1rem; cursor: pointer;
+            border: 2px solid var(--secondary); background: none;
+            border-radius: 10px; transition: 0.3s;
+        }
+        button:hover { background: var(--secondary); color: white; }
+
+        .avatar-container { display: flex; justify-content: space-around; margin: 20px 0; }
+        .avatar { width: 100px; text-align: center; }
+        .avatar img { width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--accent); background: #eee; object-fit: cover; }
+        .avatar p { font-size: 0.8rem; margin-top: 5px; font-weight: bold; }
+
+        .rank-title { font-size: 2rem; color: #b71c1c; margin: 20px 0; font-weight: 900; }
+        .rank-desc { font-size: 1.1rem; line-height: 1.6; color: #333; }
+    </style>
+</head>
+<body>
+
+<div id="game-box">
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <h2 style="color: var(--primary); margin-top: 20px;">學習進度更新中......</h2>
+        <p>正在開拓「仁、義、禮、智」之端...</p>
+    </div>
+
+    <div id="start-ui">
+        <h1 style="font-size: 2.2rem; color: var(--primary);">論四端：全能修煉 40 題</h1>
+        <div class="avatar-container">
+            <div class="avatar"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Confucius_Small.jpg/200px-Confucius_Small.jpg" alt="孔子"><p>孔子</p></div>
+            <div class="avatar"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Mencius.jpg/200px-Mencius.jpg" alt="孟子"><p>孟子</p></div>
+            <div class="avatar"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Xunzi.jpg/220px-Xunzi.jpg" alt="荀子"><p>荀子</p></div>
+        </div>
+        <p><b>挑戰規則：</b>每題限時 10 秒，每 10 題休息一次。</p>
+        <button onclick="initGame()" style="background: var(--primary); color: white; padding: 15px 40px; border:none; border-radius:50px;">開始終極挑戰</button>
+    </div>
+
+    <div id="quiz-ui" style="display:none;">
+        <div id="timer-bar"><div id="timer-fill"></div></div>
+        <div style="display:flex; justify-content: space-between; margin-bottom: 10px;">
+            <span>進度：<b id="progress-text">1/40</b></span>
+            <span>正確數：<b id="score-text">0</b></span>
+        </div>
+        <div class="question" id="q-text">題目載入中...</div>
+        <div class="options" id="opt-box"></div>
+    </div>
+
+    <div id="result-ui" style="display:none;">
+        <h1 style="color: var(--secondary);">修煉完成</h1>
+        <div class="avatar-container">
+             <div class="avatar"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Mencius.jpg/200px-Mencius.jpg" alt="孟子"><p>亞聖嘉許</p></div>
+        </div>
+        <div id="rank-stars" style="font-size: 3rem; color: gold;">⭐⭐⭐</div>
+        <div class="rank-title" id="rank-name">聖賢級</div>
+        <div class="rank-desc" id="rank-info"></div>
+        <button onclick="location.reload()" style="margin-top:25px; background:var(--accent); border:none; padding:10px 30px;">再次進入儒道</button>
+    </div>
+</div>
+
+<script>
+const questions = [
+    // [1-20 語譯與文化題]
+    { q: "「治天下可運之掌上」中，「運」字的意思是？", a: ["運氣", "運轉/運弄", "搬運", "運動"], c: 1 },
+    { q: "「今人乍見孺子將入於井」中，「乍」字的意思是？", a: ["突然", "剛巧", "詐騙", "只有"], c: 0 },
+    { q: "「非所以內交於孺子之父母也」中，「內交」解作？", a: ["內心交戰", "攀結交情", "內部交易", "外交手段"], c: 1 },
+    { q: "「非所以要譽於鄉黨朋友也」中，「要」字的意思是？", a: ["重要", "求取/博取", "需要", "約定"], c: 1 },
+    { q: "「羞惡之心，義之端也」中，「羞惡」解作？", a: ["羞辱惡人", "討厭羞恥", "為己錯慚愧，因人惡厭惡", "嘲笑他人"], c: 2 },
+    { q: "「端」在「四端」中的原意是？", a: ["端正", "結束", "開端/萌芽", "邊界"], c: 2 },
+    { q: "「猶其有四體也」中，「四體」是指？", a: ["四個身體", "四肢", "四種體制", "四種體型"], c: 1 },
+    { q: "「自賊者也」中，「賊」的意思是？", a: ["小偷", "傷害", "欺騙", "盜賊"], c: 1 },
+    { q: "「若火之始然」中，「然」通假於？", a: ["燃", "染", "藍", "難"], c: 0 },
+    { q: "「足以保四海」中，「保」的意思是？", a: ["保護", "保證", "安定", "安全"], c: 2 },
+    { q: "孟子被後世尊稱為？", a: ["至聖", "亞聖", "述聖", "復聖"], c: 1 },
+    { q: "下列哪一項不屬於儒家經典「四書」？", a: ["大學", "中庸", "詩經", "孟子"], c: 2 },
+    { q: "孟子主張的治國方針是？", a: ["霸道", "仁政", "無為", "法治"], c: 1 },
+    { q: "孟子認為人與禽獸的主要區別在於？", a: ["會用火", "有語言", "有向善的德性", "有四肢"], c: 2 },
+    { q: "「是非之心」是哪一種德性的開端？", a: ["仁", "義", "禮", "智"], c: 3 },
+    { q: "「孺子入井」的例子是為了論證？", a: ["井邊危險", "父母責任", "人皆有不忍人之心", "救人有名聲"], c: 2 },
+    { q: "「四端如四體」運用了什麼論證手法？", a: ["舉例論證", "比喻論證", "引用論證", "演繹論證"], c: 1 },
+    { q: "「無惻隱之心，非人也」運用了哪種修辭？", a: ["誇張", "排比", "擬人", "對偶"], c: 1 },
+    { q: "荀子提出什麼人性觀點與孟子相對？", a: ["人性本善", "人性本惡", "人性無善無惡", "人性有善有惡"], c: 1 },
+    { q: "若能擴充四端，足以？", a: ["自私自利", "事父母", "保四海", "富甲一方"], c: 2 },
+
+    // [21-30 基礎核心題]
+    { q: "「人皆有不忍人之心」下一句是？", a: ["無惻隱之心，非人也", "先王有不忍人之心", "斯有不忍人之政矣", "此之謂也"], c: 2 },
+    { q: "「惻隱之心」對應哪一個德性？", a: ["仁", "義", "禮", "智"], c: 0 },
+    { q: "背誦填空：「辭讓之心，____也。」", a: ["仁之端", "義之端", "禮之端", "智之端"], c: 2 },
+    { q: "背誦填空：「若火之始然，____。」", a: ["泉之始達", "泉之始鳴", "水之始流", "山之始立"], c: 0 },
+    { q: "背誦：「苟不充之，不足以____。」", a: ["治天下", "保四海", "事父母", "全性命"], c: 2 },
+    { q: "孟子稱呼傷害自己良心的人為？", a: ["自賊者", "自棄者", "自負者", "自保者"], c: 0 },
+    { q: "「鄉黨」在古代行政單位指？", a: ["家鄉好友", "地方鄰里單位", "政府官職", "政黨"], c: 1 },
+    { q: "孟子認為人皆有「不忍人之心」是？", a: ["後天教化", "天生本能", "法律約束", "利益驅使"], c: 1 },
+    { q: "「非惡其聲而然也」中的「聲」是指？", a: ["名聲", "小孩呼救聲", "井中回聲", "流言蜚語"], c: 1 },
+    { q: "《論四端》出自《孟子》哪一篇？", a: ["梁惠王", "公孫丑", "滕文公", "告子"], c: 1 },
+
+    // [31-40 進階原文背誦題]
+    { q: "背誦：「今人____見孺子將入於井」？", a: ["突然", "驟", "忽", "乍"], c: 3 },
+    { q: "背誦：「皆有____之心。非所以內交於孺子之父母也」？", a: ["羞惡是非", "怵惕惻隱", "驚懼憐憫", "不忍人之心"], c: 1 },
+    { q: "背誦：「由是觀之，無惻隱之心，____。」", a: ["非人也", "賊其君也", "自賊者也", "非禮也"], c: 0 },
+    { q: "背誦：「羞惡之心，____。」", a: ["仁之端也", "禮之端也", "智之端也", "義之端也"], c: 3 },
+    { q: "背誦：「是非之心，____。」", a: ["智之端也", "義之端也", "德之本也", "聖之功也"], c: 0 },
+    { q: "背誦：「人之有是四端也，猶其有____也。」", a: ["四德", "四海", "四體", "五官"], c: 2 },
+    { q: "背誦：「有是四端而自謂不能者，____。」", a: ["賊其君者也", "自賊者也", "不足與議也", "近於禽獸也"], c: 1 },
+    { q: "背誦：「____，賊其君者也。」", a: ["有是四端者", "自謂不能者", "謂其君不能者", "自賊者"], c: 2 },
+    { q: "背誦：「苟能充之，足以____。」", a: ["事父母", "保四海", "修其身", "治其國"], c: 1 },
+    { q: "文中以什麼比喻四端的擴充？", a: ["水就下", "火始然、泉始達", "木之本、水之源", "日月之行"], c: 1 }
+];
+
+let currentIdx = 0;
+let score = 0;
+let timeLeft = 10;
+let timerId = null;
+let animationPlayedFor = -1; 
+
+function initGame() {
+    document.getElementById('start-ui').style.display = 'none';
+    document.getElementById('quiz-ui').style.display = 'block';
+    loadQuestion();
+}
+
+function loadQuestion() {
+    // 每 10 題休息 3 秒 (第 11, 21, 31 題前)
+    if (currentIdx > 0 && currentIdx % 10 === 0 && animationPlayedFor !== currentIdx) {
+        showAnimation();
+        return;
+    }
+    
+    timeLeft = 10;
+    updateTimerBar();
+    document.getElementById('progress-text').innerText = `${currentIdx + 1}/40`;
+    document.getElementById('score-text').innerText = score;
+    document.getElementById('q-text').innerText = questions[currentIdx].q;
+    const box = document.getElementById('opt-box');
+    box.innerHTML = '';
+    
+    questions[currentIdx].a.forEach((txt, i) => {
+        const btn = document.createElement('button');
+        btn.innerText = txt;
+        btn.onclick = () => selectAnswer(i);
+        box.appendChild(btn);
+    });
+
+    startTimer();
+}
+
+function startTimer() {
+    clearInterval(timerId);
+    timerId = setInterval(() => {
+        timeLeft--;
+        updateTimerBar();
+        if (timeLeft <= 0) {
+            clearInterval(timerId);
+            selectAnswer(-1); 
+        }
+    }, 1000);
+}
+
+function updateTimerBar() {
+    document.getElementById('timer-fill').style.width = (timeLeft * 10) + "%";
+}
+
+function selectAnswer(i) {
+    clearInterval(timerId);
+    if (i === questions[currentIdx].c) {
+        score++;
+    }
+    
+    currentIdx++;
+    if (currentIdx < questions.length) {
+        loadQuestion();
+    } else {
+        showFinalResult();
+    }
+}
+
+function showAnimation() {
+    animationPlayedFor = currentIdx; 
+    const overlay = document.getElementById('loading-overlay');
+    overlay.style.display = 'flex';
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        loadQuestion();
+    }, 3000); 
+}
+
+function showFinalResult() {
+    document.getElementById('quiz-ui').style.display = 'none';
+    document.getElementById('result-ui').style.display = 'block';
+    
+    const rankName = document.getElementById('rank-name');
+    const rankInfo = document.getElementById('rank-info');
+    const stars = document.getElementById('rank-stars');
+    
+    let wrong = 40 - score;
+    
+    if (score === 40) {
+        rankName.innerText = "三星成就：聖賢級";
+        rankInfo.innerText = "超凡入聖！40 題全對。你已徹底掌握《論四端》所有字義與原文，堪稱孟子嫡傳弟子！";
+        stars.innerText = "⭐⭐⭐";
+    } else if (wrong <= 4) {
+        rankName.innerText = "二星成就：君子級";
+        rankInfo.innerText = `卓越！答對 ${score} 題。你已具備強大的文學底蘊，「足以保四海」！`;
+        stars.innerText = "⭐⭐";
+    } else if (wrong <= 8) {
+        rankName.innerText = "一星成就：學子級";
+        rankInfo.innerText = `及格！答對 ${score} 題。「足以事父母」，但對於原文背誦仍有進步空間。`;
+        stars.innerText = "⭐";
+    } else {
+        rankName.innerText = "未達標：賊人級";
+        rankInfo.innerText = `答對 ${score} 題。你正在「自賊」（自暴自棄）！快回去重新背誦段落與字義！`;
+        stars.innerText = "❌";
+        rankName.style.color = "#555";
+    }
+}
+</script>
+
+</body>
+</html>
